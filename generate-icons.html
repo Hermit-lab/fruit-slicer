@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生成 PWA 图标</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #1a1a2e;
+            color: #fff;
+            font-family: sans-serif;
+        }
+        canvas {
+            margin: 20px;
+            border: 2px solid #ffd700;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            background: #ffd700;
+            color: #1a1a2e;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #ffec8b;
+        }
+        .info {
+            margin: 20px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <h1>阿强切水果 - PWA 图标生成器</h1>
+    <p class="info">点击按钮下载图标文件</p>
+
+    <h3>192x192 图标</h3>
+    <canvas id="icon192" width="192" height="192"></canvas>
+    <button onclick="downloadIcon('icon192', 'icon-192.png')">下载 icon-192.png</button>
+
+    <h3>512x512 图标</h3>
+    <canvas id="icon512" width="512" height="512"></canvas>
+    <button onclick="downloadIcon('icon512', 'icon-512.png')">下载 icon-512.png</button>
+
+    <button onclick="downloadAll()" style="margin-top: 30px; font-size: 20px; padding: 20px 40px;">
+        📥 一键下载所有图标
+    </button>
+
+    <script>
+        function drawIcon(canvas) {
+            const ctx = canvas.getContext('2d');
+            const size = canvas.width;
+
+            // 清空画布
+            ctx.clearRect(0, 0, size, size);
+
+            // === 背景层 ===
+            // 深色渐变背景 - 从深紫到深蓝
+            const bgGradient = ctx.createLinearGradient(0, 0, 0, size);
+            bgGradient.addColorStop(0, '#0d0d1a');
+            bgGradient.addColorStop(0.5, '#1a1a2e');
+            bgGradient.addColorStop(1, '#0f0f1f');
+            ctx.fillStyle = bgGradient;
+            ctx.fillRect(0, 0, size, size);
+
+            // === 装饰性光晕 ===
+            // 底部橙色光晕
+            const bottomGlow = ctx.createRadialGradient(
+                size * 0.5, size * 0.8, 0,
+                size * 0.5, size * 0.8, size * 0.6
+            );
+            bottomGlow.addColorStop(0, 'rgba(255, 140, 0, 0.3)');
+            bottomGlow.addColorStop(1, 'rgba(255, 140, 0, 0)');
+            ctx.fillStyle = bottomGlow;
+            ctx.beginPath();
+            ctx.arc(size * 0.5, size * 0.8, size * 0.6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 顶部青色光晕
+            const topGlow = ctx.createRadialGradient(
+                size * 0.5, size * 0.2, 0,
+                size * 0.5, size * 0.2, size * 0.5
+            );
+            topGlow.addColorStop(0, 'rgba(100, 200, 255, 0.15)');
+            topGlow.addColorStop(1, 'rgba(100, 200, 255, 0)');
+            ctx.fillStyle = topGlow;
+            ctx.beginPath();
+            ctx.arc(size * 0.5, size * 0.2, size * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // === 中心圆形容器 ===
+            const containerGradient = ctx.createRadialGradient(
+                size * 0.5, size * 0.5, 0,
+                size * 0.5, size * 0.5, size * 0.38
+            );
+            containerGradient.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
+            containerGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.05)');
+            containerGradient.addColorStop(1, 'rgba(255, 255, 255, 0.02)');
+
+            ctx.beginPath();
+            ctx.arc(size * 0.5, size * 0.5, size * 0.38, 0, Math.PI * 2);
+            ctx.fillStyle = containerGradient;
+            ctx.fill();
+
+            // 容器边框 - 半透明白色
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = size * 0.015;
+            ctx.beginPath();
+            ctx.arc(size * 0.5, size * 0.5, size * 0.38, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // === 刀光效果（斜向切割）===
+            const slashGradient = ctx.createLinearGradient(
+                size * 0.2, size * 0.2,
+                size * 0.8, size * 0.8
+            );
+            slashGradient.addColorStop(0, 'rgba(100, 200, 255, 0)');
+            slashGradient.addColorStop(0.4, 'rgba(100, 200, 255, 0.6)');
+            slashGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.9)');
+            slashGradient.addColorStop(0.6, 'rgba(100, 200, 255, 0.6)');
+            slashGradient.addColorStop(1, 'rgba(100, 200, 255, 0)');
+
+            ctx.save();
+            ctx.translate(size * 0.5, size * 0.5);
+            ctx.rotate(Math.PI / 4); // 45 度角
+            ctx.fillStyle = slashGradient;
+            ctx.fillRect(-size * 0.03, -size * 0.5, size * 0.06, size);
+            ctx.restore();
+
+            // === 芒果 emoji ===
+            const fontSize = size * 0.5;
+            ctx.font = `bold ${fontSize}px "Segoe UI Emoji", "Apple Color Emoji", Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // 芒果阴影/投影
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+            ctx.shadowBlur = size * 0.2;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = size * 0.05;
+            ctx.fillText('🥭', size * 0.5, size * 0.5);
+
+            // 重置阴影
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+
+            // === 四角装饰光点 ===
+            const cornerPositions = [
+                { x: 0.15, y: 0.15 },
+                { x: 0.85, y: 0.15 },
+                { x: 0.15, y: 0.85 },
+                { x: 0.85, y: 0.85 }
+            ];
+
+            cornerPositions.forEach((pos, index) => {
+                const dotGradient = ctx.createRadialGradient(
+                    size * pos.x, size * pos.y, 0,
+                    size * pos.x, size * pos.y, size * 0.08
+                );
+                dotGradient.addColorStop(0, 'rgba(255, 215, 0, 0.8)');
+                dotGradient.addColorStop(0.5, 'rgba(255, 215, 0, 0.2)');
+                dotGradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+
+                ctx.beginPath();
+                ctx.arc(size * pos.x, size * pos.y, size * 0.08, 0, Math.PI * 2);
+                ctx.fillStyle = dotGradient;
+                ctx.fill();
+            });
+        }
+
+        function downloadIcon(canvasId, filename) {
+            const canvas = document.getElementById(canvasId);
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function downloadAll() {
+            downloadIcon('icon192', 'icon-192.png');
+            setTimeout(() => downloadIcon('icon512', 'icon-512.png'), 500);
+        }
+
+        // 页面加载时绘制图标
+        window.onload = () => {
+            drawIcon(document.getElementById('icon192'));
+            drawIcon(document.getElementById('icon512'));
+        };
+    </script>
+</body>
+</html>
