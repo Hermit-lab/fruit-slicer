@@ -1,10 +1,8 @@
-// 切水果游戏 - 简洁版
+// 切水果游戏 - 移动端优化版
 class FruitSlicerGame {
     constructor() {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
-        this.width = this.canvas.width;
-        this.height = this.canvas.height;
 
         // 自定义鼠标
         this.customCursor = document.getElementById('customCursor');
@@ -54,6 +52,22 @@ class FruitSlicerGame {
 
         // 音效
         this.audioContext = null;
+
+        // 响应式 Canvas 尺寸
+        this.baseWidth = 800;
+        this.baseHeight = 600;
+        this.scale = 1;
+        this.resizeCanvas();
+        window.addEventListener('resize', () => this.resizeCanvas());
+
+        // 检测设备类型
+        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        this.isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+        // 隐藏鼠标（触摸设备）
+        if (this.isTouch) {
+            this.customCursor.style.display = 'none';
+        }
 
         // 水果类型
         this.fruitTypes = [
@@ -144,6 +158,41 @@ class FruitSlicerGame {
         this.updateUI();
     }
 
+    // 响应式 Canvas 尺寸调整
+    resizeCanvas() {
+        const maxWidth = Math.min(window.innerWidth - 20, 800);
+        const maxHeight = Math.min(window.innerHeight - 180, 600);
+
+        // 计算合适的尺寸（保持 4:3 比例）
+        let targetWidth = this.baseWidth;
+        let targetHeight = this.baseHeight;
+
+        if (targetWidth > maxWidth) {
+            const ratio = maxWidth / targetWidth;
+            targetWidth = maxWidth;
+            targetHeight = this.baseHeight * ratio;
+        }
+
+        if (targetHeight > maxHeight) {
+            const ratio = maxHeight / targetHeight;
+            targetHeight = maxHeight;
+            targetWidth = this.baseWidth * ratio;
+        }
+
+        // 设置 Canvas 显示尺寸
+        this.canvas.style.width = targetWidth + 'px';
+        this.canvas.style.height = targetHeight + 'px';
+
+        // 设置 Canvas 实际分辨率（支持高 DPI）
+        this.canvas.width = this.baseWidth;
+        this.canvas.height = this.baseHeight;
+
+        // 计算缩放比例
+        this.scale = targetWidth / this.baseWidth;
+        this.width = this.baseWidth;
+        this.height = this.baseHeight;
+    }
+
     bindEvents() {
         // 自定义鼠标移动
         document.addEventListener('mousemove', (e) => {
@@ -172,24 +221,21 @@ class FruitSlicerGame {
         this.canvas.addEventListener('mousedown', (e) => {
             this.isMouseDown = true;
             this.mousePath = [];
-            const rect = this.canvas.getBoundingClientRect();
-            this.mousePath.push({
-                x: e.clientX - rect.left,
-                y: e.clientY - rect.top
-            });
+            const pos = this.getCanvasCoordinates(e);
+            this.mousePath.push(pos);
 
             // 点击特效 - 缩小外圈
-            this.customCursor.classList.add('cursor-active');
+            if (!this.isTouch) {
+                this.customCursor.classList.add('cursor-active');
+            }
         });
 
         this.canvas.addEventListener('mousemove', (e) => {
             if (!this.isMouseDown || !this.isPlaying) return;
-            const rect = this.canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            this.mousePath.push({ x, y, time: Date.now() });
-            this.slashTrail.push({ x, y, life: 15, maxLife: 15 });
-            this.checkSlice(x, y);
+            const pos = this.getCanvasCoordinates(e);
+            this.mousePath.push({ x: pos.x, y: pos.y, time: Date.now() });
+            this.slashTrail.push({ x: pos.x, y: pos.y, life: 15, maxLife: 15 });
+            this.checkSlice(pos.x, pos.y);
         });
 
         this.canvas.addEventListener('mouseup', () => {
@@ -212,35 +258,79 @@ class FruitSlicerGame {
             }
         });
 
-        // 触摸事件
+        // 触摸事件 - 支持多点触控
         this.canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
             this.isMouseDown = true;
             this.mousePath = [];
-            const rect = this.canvas.getBoundingClientRect();
             const touch = e.touches[0];
-            this.mousePath.push({
-                x: touch.clientX - rect.left,
-                y: touch.clientY - rect.top
-            });
-        });
+            const pos = this.getCanvasCoordinates(touch);
+            this.mousePath.push(pos);
+
+            // 触摸反馈
+            if (this.isPlaying) {
+                this.createTouchFeedback(pos.x, pos.y);
+            }
+        }, { passive: false });
 
         this.canvas.addEventListener('touchmove', (e) => {
             e.preventDefault();
             if (!this.isMouseDown || !this.isPlaying) return;
-            const rect = this.canvas.getBoundingClientRect();
-            const touch = e.touches[0];
-            const x = touch.clientX - rect.left;
-            const y = touch.clientY - rect.top;
-            this.mousePath.push({ x, y, time: Date.now() });
-            this.slashTrail.push({ x, y, life: 15, maxLife: 15 });
-            this.checkSlice(x, y);
+
+            // 支持多点触控切割
+            for (let i = 0; i < e.touches.length; i++) {
+                const touch = e.touches[i];
+                const pos = this.getCanvasCoordinates(touch);
+                this.mousePath.push({ x: pos.x, y: pos.y, time: Date.now() });
+                this.slashTrail.push({ x: pos.x, y: pos.y, life: 15, maxLife: 15 });
+                this.checkSlice(pos.x, pos.y);
+            }
+        }, { passive: false });
+
+        this.canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            if (e.touches.length === 0) {
+                this.isMouseDown = false;
+                this.mousePath = [];
+            }
         });
 
-        this.canvas.addEventListener('touchend', () => {
+        this.canvas.addEventListener('touchcancel', () => {
             this.isMouseDown = false;
             this.mousePath = [];
         });
+    }
+
+    // 获取 Canvas 坐标（考虑缩放）
+    getCanvasCoordinates(event) {
+        const rect = this.canvas.getBoundingClientRect();
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
+
+        return {
+            x: (event.clientX - rect.left) * scaleX,
+            y: (event.clientY - rect.top) * scaleY
+        };
+    }
+
+    // 触摸反馈效果
+    createTouchFeedback(x, y) {
+        const touchRing = document.createElement('div');
+        touchRing.style.cssText = `
+            position: fixed;
+            left: ${x * this.scale}px;
+            top: ${y * this.scale}px;
+            width: 40px;
+            height: 40px;
+            border: 2px solid rgba(255, 215, 0, 0.8);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 9999;
+            animation: touchRipple 0.3s ease-out forwards;
+        `;
+        document.body.appendChild(touchRing);
+        setTimeout(() => touchRing.remove(), 300);
     }
 
     start() {
@@ -259,8 +349,10 @@ class FruitSlicerGame {
         this.shakeIntensity = 0;
         this.slowMotion = false;
 
-        // 显示自定义鼠标
-        this.customCursor.style.display = 'block';
+        // 触摸设备不显示自定义鼠标
+        if (!this.isTouch) {
+            this.customCursor.style.display = 'block';
+        }
 
         document.getElementById('welcomeScreen').classList.add('hidden');
         document.getElementById('gameOverScreen').classList.add('hidden');
@@ -273,6 +365,10 @@ class FruitSlicerGame {
     initAudio() {
         if (!this.audioContext) {
             this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        // 移动端需要用户交互后才能播放声音
+        if (this.audioContext.state === 'suspended') {
+            this.audioContext.resume();
         }
     }
 

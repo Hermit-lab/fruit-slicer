@@ -4,7 +4,7 @@
   "description": "切割水果，躲避炸弹，挑战最高分！",
   "start_url": "./index.html",
   "display": "standalone",
-  "orientation": "landscape",
+  "orientation": "any",
   "background_color": "#2c1810",
   "theme_color": "#ffd700",
   "categories": ["games"],
