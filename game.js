@@ -158,25 +158,21 @@ class FruitSlicerGame {
         this.updateUI();
     }
 
-    // 响应式 Canvas 尺寸调整
+    // 响应式 Canvas 尺寸调整 - 横屏铺满屏幕
     resizeCanvas() {
-        const maxWidth = Math.min(window.innerWidth - 20, 800);
-        const maxHeight = Math.min(window.innerHeight - 180, 600);
+        const isLandscape = window.innerWidth > window.innerHeight;
 
-        // 计算合适的尺寸（保持 4:3 比例）
-        let targetWidth = this.baseWidth;
-        let targetHeight = this.baseHeight;
+        // 横屏时铺满屏幕，竖屏时根据宽度调整
+        let targetWidth, targetHeight;
 
-        if (targetWidth > maxWidth) {
-            const ratio = maxWidth / targetWidth;
-            targetWidth = maxWidth;
-            targetHeight = this.baseHeight * ratio;
-        }
-
-        if (targetHeight > maxHeight) {
-            const ratio = maxHeight / targetHeight;
-            targetHeight = maxHeight;
-            targetWidth = this.baseWidth * ratio;
+        if (isLandscape) {
+            // 横屏：Canvas 铺满整个屏幕
+            targetWidth = window.innerWidth;
+            targetHeight = window.innerHeight;
+        } else {
+            // 竖屏：根据宽度计算（保持 4:3 比例）
+            targetWidth = window.innerWidth;
+            targetHeight = window.innerWidth * 0.75;
         }
 
         // 设置 Canvas 显示尺寸
@@ -184,13 +180,26 @@ class FruitSlicerGame {
         this.canvas.style.height = targetHeight + 'px';
 
         // 设置 Canvas 实际分辨率（支持高 DPI）
-        this.canvas.width = this.baseWidth;
-        this.canvas.height = this.baseHeight;
+        const dpr = window.devicePixelRatio || 1;
+        this.canvas.width = this.baseWidth * dpr;
+        this.canvas.height = this.baseHeight * dpr;
 
-        // 计算缩放比例
+        // 计算缩放比例（用于坐标转换）
         this.scale = targetWidth / this.baseWidth;
         this.width = this.baseWidth;
         this.height = this.baseHeight;
+
+        // 根据屏幕大小调整水果尺寸
+        const minDimension = Math.min(window.innerWidth, window.innerHeight);
+        const sizeFactor = Math.min(1, minDimension / 600);
+
+        this.fruitTypes.forEach(fruit => {
+            const baseRadius = {
+                'watermelon': 50, 'orange': 45, 'kiwi': 42,
+                'strawberry': 40, 'blueberry': 38, 'mango': 48, 'golden': 35
+            }[fruit.name] || 40;
+            fruit.radius = baseRadius * sizeFactor;
+        });
     }
 
     bindEvents() {

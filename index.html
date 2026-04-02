@@ -47,9 +47,24 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            width: 100vw;
+            height: 100vh;
             padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-            max-width: 100%;
-            max-height: 100%;
+        }
+
+        /* 横屏强制全屏 */
+        @media (orientation: landscape) {
+            #gameContainer {
+                width: 100vw;
+                height: 100vh;
+            }
+        }
+
+        /* 竖屏提示 */
+        @media (orientation: portrait) {
+            #rotate提示 {
+                display: flex !important;
+            }
         }
 
         /* UI 区域整体布局 */
@@ -105,16 +120,39 @@
             font-size: clamp(12px, 2.5vw, 18px);
         }
 
-        /* 游戏 Canvas - 响应式 */
+        /* 游戏 Canvas - 响应式全屏 */
         #gameCanvas {
             border: clamp(2px, 0.5vw, 3px) solid #ffd700;
             border-radius: 10px;
             box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
             cursor: none;
             background: linear-gradient(180deg, #3d2817 0%, #2a1a15 100%);
-            max-width: 100%;
-            max-height: calc(100vh - 150px);
             touch-action: none;
+        }
+
+        /* 横屏时 Canvas 铺满 */
+        @media (orientation: landscape) {
+            #gameCanvas {
+                width: 100vw;
+                height: 100vh;
+            }
+            #ui {
+                position: absolute;
+                top: 10px;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 10;
+                margin-bottom: 0;
+            }
+        }
+
+        /* 竖屏时 Canvas 适配 */
+        @media (orientation: portrait) {
+            #gameCanvas {
+                width: 100vw;
+                height: calc(100vw * 0.75);
+                max-height: 100vh;
+            }
         }
 
         /* 自定义鼠标 - 仅在非触摸设备显示 */
@@ -259,6 +297,40 @@
             pointer-events: none;
             opacity: 0;
             z-index: 5;
+        }
+
+        /* 竖屏旋转提示 */
+        #rotateHint {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #2c1810 0%, #1a1a2e 100%);
+            z-index: 10000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #ffd700;
+        }
+
+        #rotateHint .rotate-icon {
+            font-size: 80px;
+            margin-bottom: 30px;
+            animation: rotateIcon 2s infinite;
+        }
+
+        #rotateHint p {
+            font-size: 24px;
+            color: #fff;
+        }
+
+        @keyframes rotateIcon {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(90deg); }
+            50% { transform: rotate(0deg); }
+            75% { transform: rotate(-90deg); }
         }
 
         #startScreen, #gameOverScreen, #welcomeScreen {
@@ -410,6 +482,13 @@
     </style>
 </head>
 <body>
+    <!-- 竖屏旋转提示 -->
+    <div id="rotateHint">
+        <div class="rotate-icon">📱</div>
+        <p>请旋转设备为横屏模式</p>
+        <p style="font-size: 16px; margin-top: 20px; color: #888;">Please rotate your device to landscape</p>
+    </div>
+
     <!-- 自定义鼠标 - 简约高级版 -->
     <div id="customCursor">
         <div class="cursor-dot"></div>
